@@ -27,3 +27,9 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Laravel Backend
+/backend/vendor/
+/backend/storage/*.key
+/backend/bootstrap/cache/*.php
+/backend/.phpunit.cache/
