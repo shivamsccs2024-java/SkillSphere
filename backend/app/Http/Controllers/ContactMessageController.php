@@ -7,6 +7,7 @@ use App\Models\ContactMessage;
 
 class ContactMessageController extends Controller
 {
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -15,22 +16,26 @@ class ContactMessageController extends Controller
             'subject' => 'required|string|max:255',
             'message' => 'required|string',
         ]);
-
+    
+        // Get authenticated user through Sanctum
+        $user = auth('sanctum')->user();
+    
         $contactMessage = ContactMessage::create([
-            'user_id' => auth()->id(),
+            'user_id' => $user ? $user->id : null,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'subject' => $validated['subject'],
             'message' => $validated['message'],
             'status' => 'pending',
         ]);
-
+    
         return response()->json([
             'status' => true,
             'message' => 'Contact message submitted successfully',
             'data' => $contactMessage,
         ], 201);
     }
+    
 
     public function index(Request $request)
     {

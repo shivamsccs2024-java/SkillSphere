@@ -48,17 +48,22 @@ class EnrollmentController extends Controller
     }
 
 
+
     public function myCourses(Request $request)
     {
-    $enrollments = Enrollment::with('course')
-        ->where('user_id', $request->user()->id)
-        ->latest()
-        ->get();
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Enrolled courses retrieved successfully',
-        'data' => $enrollments,
-    ], 200);
+        $enrollments = Enrollment::with([
+            'course',
+            'progress'
+        ])
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->get();
+    
+        return response()->json([
+            'status' => true,
+            'message' => 'Enrolled courses retrieved successfully',
+            'data' => $enrollments,
+        ], 200);
     }
+    
 }

@@ -9,8 +9,9 @@ import {
   MessageCircle
 } from "lucide-react";
 
-function Contact() {
+import api from "../services/api";
 
+function Contact() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,7 +20,10 @@ function Contact() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -27,34 +31,43 @@ function Contact() {
       ...prev,
       [name]: value
     }));
+
+    setError("");
+    setSubmitted(false);
   };
 
-  const handleSubmit = (e) => {
+  // Submit contact message to Laravel
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const messages = JSON.parse(
-      localStorage.getItem("ss_messages") || "[]"
-    );
+    try {
+      setLoading(true);
+      setError("");
+      setSubmitted(false);
 
-    const newMessage = {
-      id: Date.now(),
-      ...formData,
-      date: new Date().toISOString()
-    };
+      await api.post("/contact", formData);
 
-    localStorage.setItem(
-      "ss_messages",
-      JSON.stringify([...messages, newMessage])
-    );
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: ""
+      });
 
-    setFormData({
-      name: "",
-      email: "",
-      subject: "",
-      message: ""
-    });
+      setSubmitted(true);
 
-    setSubmitted(true);
+    } catch (err) {
+      console.error("Contact form error:", err);
+
+      const message =
+        err.response?.data?.message ||
+        "Unable to submit your message. Please try again.";
+
+      setError(message);
+
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -164,11 +177,19 @@ function Contact() {
 
                 <h2>Send Us a Message</h2>
 
-                <p>Fill out the form and we'll get back to you.</p>
+                <p>
+                  Fill out the form and we'll get back to you.
+                </p>
 
                 {submitted && (
                   <div className="contact-success">
                     Your message has been submitted successfully!
+                  </div>
+                )}
+
+                {error && (
+                  <div className="alert alert-danger">
+                    {error}
                   </div>
                 )}
 
@@ -185,6 +206,7 @@ function Contact() {
                         placeholder="Enter your name"
                         value={formData.name}
                         onChange={handleChange}
+                        disabled={loading}
                         required
                       />
                     </div>
@@ -198,6 +220,7 @@ function Contact() {
                         placeholder="Enter your email"
                         value={formData.email}
                         onChange={handleChange}
+                        disabled={loading}
                         required
                       />
                     </div>
@@ -211,6 +234,7 @@ function Contact() {
                         placeholder="Enter message subject"
                         value={formData.subject}
                         onChange={handleChange}
+                        disabled={loading}
                         required
                       />
                     </div>
@@ -224,6 +248,7 @@ function Contact() {
                         placeholder="Write your message here..."
                         value={formData.message}
                         onChange={handleChange}
+                        disabled={loading}
                         required
                       />
                     </div>
@@ -233,8 +258,9 @@ function Contact() {
                       <button
                         type="submit"
                         className="contact-submit-btn"
+                        disabled={loading}
                       >
-                        Send Message
+                        {loading ? "Sending..." : "Send Message"}
                         <Send size={18} />
                       </button>
 

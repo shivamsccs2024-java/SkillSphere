@@ -1,24 +1,67 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
-
-import courses from "../data/courses";
+import api from "../services/api";
 import CourseCard from "../components/CourseCard";
 
 function Courses() {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
 
+  // Fetch courses from Laravel API
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await api.get("/courses");
+
+        // Supports both { data: [...] } and direct array responses
+        const courseData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.data;
+
+        if (!Array.isArray(courseData)) {
+          throw new Error("Invalid courses response from API.");
+        }
+
+        setCourses(courseData);
+      } catch (err) {
+        console.error("Failed to fetch courses:", err);
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          "Unable to load courses. Please try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  // Get unique categories from API courses
   const categories = [
     "All",
-    ...new Set(courses.map((course) => course.category))
+    ...new Set(courses.map((course) => course.category).filter(Boolean)),
   ];
 
+  // Search, category filter and sorting
   const filteredCourses = courses
     .filter((course) => {
+      const search = searchTerm.toLowerCase();
+
       const matchesSearch =
-        course.title.toLowerCase().includes(searchTerm.toLowerCase());
+        course.title?.toLowerCase().includes(search) ||
+        course.instructor?.toLowerCase().includes(search) ||
+        course.category?.toLowerCase().includes(search);
 
       const matchesCategory =
         selectedCategory === "All" ||
@@ -28,43 +71,38 @@ function Courses() {
     })
     .sort((a, b) => {
       if (sortBy === "lowToHigh") {
-        return a.price - b.price;
+        return Number(a.price) - Number(b.price);
       }
 
       if (sortBy === "highToLow") {
-        return b.price - a.price;
+        return Number(b.price) - Number(a.price);
       }
 
-      return 0;
+      if (sortBy === "rating") {
+        return Number(b.rating) - Number(a.rating);
+      }
+
+      return Number(b.students_count || 0) - Number(a.students_count || 0);
     });
 
   return (
     <main className="courses-page">
-
-      <section className="courses-hero">
-        <div className="container text-center">
-          <span>EXPLORE OUR COURSES</span>
-
-          <h1>
-            Discover Your Next
-            <span> Learning Journey</span>
-          </h1>
-
+      <section className="courses-header">
+        <div className="container">
+          <h1>Explore Our Courses</h1>
           <p>
-            Explore industry-focused courses and build
-            the skills needed for your dream career.
+            Discover courses to improve your skills and achieve your career goals.
           </p>
         </div>
       </section>
 
-      <section className="courses-list-section">
+      <section className="courses-section">
         <div className="container">
 
+          {/* Search and Filters */}
           <div className="courses-toolbar">
-
-            <div className="courses-search">
-              <Search size={20} />
-
+            <div className="search-box">
+              <Search size={18} />
               <input
                 type="text"
                 placeholder="Search courses..."
@@ -73,7 +111,8 @@ function Courses() {
               />
             </div>
 
-            <div className="courses-filters">
+            <div className="filter-box">
+              <SlidersHorizontal size={18} />
 
               <select
                 value={selectedCategory}
@@ -90,42 +129,57 @@ function Courses() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
-                <option value="popular">Popular</option>
+                <option value="popular">Most Popular</option>
+                <option value="rating">Top Rated</option>
                 <option value="lowToHigh">Price: Low to High</option>
                 <option value="highToLow">Price: High to Low</option>
               </select>
-
             </div>
           </div>
 
-          <div className="courses-results">
-            <h3>All Courses</h3>
-            <span>{filteredCourses.length} Courses Found</span>
-          </div>
+          {/* Loading */}
+          {loading && (
+            <div className="courses-message">
+              <p>Loading courses...</p>
+            </div>
+          )}
 
-          <div className="row g-4">
+          {/* Error */}
+          {!loading && error && (
+            <div className="courses-message error-message">
+              <p>{error}</p>
+              <button onClick={() => window.location.reload()}>
+                Try Again
+              </button>
+            </div>
+          )}
 
-            {filteredCourses.length > 0 ? (
-              filteredCourses.map((course) => (
-                <div className="col-md-6 col-lg-3" key={course.id}>
-                  <CourseCard course={course} />
+          {/* Courses */}
+          {!loading && !error && (
+            <>
+              <div className="courses-result">
+                <p>
+                  Showing <strong>{filteredCourses.length}</strong> courses
+                </p>
+              </div>
+
+              {filteredCourses.length > 0 ? (
+                <div className="courses-grid">
+                  {filteredCourses.map((course) => (
+                    <CourseCard key={course.id} course={course} />
+                  ))}
                 </div>
-              ))
-            ) : (
-              <div className="col-12">
-                <div className="no-courses">
-                  <SlidersHorizontal size={35} />
-                  <h4>No Courses Found</h4>
+              ) : (
+                <div className="courses-message">
+                  <h3>No courses found</h3>
                   <p>Try changing your search or category filter.</p>
                 </div>
-              </div>
-            )}
-
-          </div>
+              )}
+            </>
+          )}
 
         </div>
       </section>
-
     </main>
   );
 }

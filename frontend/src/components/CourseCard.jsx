@@ -34,7 +34,7 @@ function CourseCard({ course }) {
 
           <span>
             <Users size={15} />
-            {course.students}
+            {Number(course.students_count ?? course.students ?? 0).toLocaleString()}
           </span>
 
           <span>
@@ -47,7 +47,7 @@ function CourseCard({ course }) {
 
           <div className="course-price">
             <strong>₹{course.price}</strong>
-            <del>₹{course.oldPrice}</del>
+            {course.oldPrice && <del>₹{course.oldPrice}</del>}
           </div>
 
           <Link to={`/courses/${course.id}`} className="course-link">

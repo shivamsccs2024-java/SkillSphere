@@ -13,6 +13,9 @@ use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\Api\AdminDashboardController;
+use App\Http\Controllers\Api\AdminStudentController;
+use App\Http\Controllers\Api\AdminCourseController;
 
 
 
@@ -69,13 +72,17 @@ Route::post('/logout', [AuthController::class, 'logout'])
     // Admin Group route 
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::get('/admin/contact-messages', [ContactMessageController::class, 'adminIndex']);
-        
-        Route::put(
-            '/admin/contact-messages/{id}/status', [ContactMessageController::class, 'updateStatus']
-        );
-
-        Route::delete('/admin/contact-messages/{id}',[ContactMessageController::class, 'destroy']
-        );
+        Route::put('/admin/contact-messages/{id}/status', [ContactMessageController::class, 'updateStatus']);
+        Route::delete('/admin/contact-messages/{id}',[ContactMessageController::class, 'destroy']);
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+        Route::get('/admin/students', [AdminStudentController::class, 'index']);
+        Route::get('/admin/students/{id}', [AdminStudentController::class, 'show']);
+        Route::patch('/admin/students/{id}/status', [AdminStudentController::class, 'updateStatus']);
+        Route::get('/admin/students/{id}/progress',[AdminStudentController::class, 'learningProgress']);
+        Route::get('/admin/courses', [AdminCourseController::class, 'index']);
+        Route::post('/admin/courses', [AdminCourseController::class, 'store']);
+        Route::put('/admin/courses/{id}', [AdminCourseController::class, 'update']);
+        Route::delete('/admin/courses/{id}', [AdminCourseController::class, 'destroy']);
     });
 
 

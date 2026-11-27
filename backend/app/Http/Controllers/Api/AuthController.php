@@ -74,6 +74,14 @@ class AuthController extends Controller
         ], 401);
     }
 
+    // Check student account status
+    if ($user->role === 'user' && !$user->is_active) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Your account has been deactivated. Please contact the administrator.'
+        ], 403);
+    }
+
     // 4. Generate token
     $token = $user->createToken('skillsphere-token')->plainTextToken;
 

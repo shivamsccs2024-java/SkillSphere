@@ -8,12 +8,13 @@ use Illuminate\Http\Request;
 
 class CourseController extends Controller
 {
+    // Get all active courses
     public function index()
     {
         $courses = Course::where('is_active', true)
-    ->withAvg('reviews', 'rating')
-    ->withCount('reviews')
-    ->get();
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->get();
 
         return response()->json([
             'status' => true,
@@ -22,50 +23,55 @@ class CourseController extends Controller
         ], 200);
     }
 
+    // Get single active course
     public function show($id)
     {
         $course = Course::where('is_active', true)
-        ->withAvg('reviews', 'rating')
-        ->withCount('reviews')
-        ->find($id);
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->findOrFail($id);
 
-    return response()->json([
-        'status' => true,
-        'message' => 'Course retrieved successfully',
-        'data' => $course,
-    ], 200);
+        return response()->json([
+            'status' => true,
+            'message' => 'Course retrieved successfully',
+            'data' => $course,
+        ], 200);
     }
 
-
+    // Search and filter active courses
     public function search(Request $request)
     {
         $query = Course::where('is_active', true);
-    
+
         // Search by title
         if ($request->filled('search')) {
-            $query->where('title', 'LIKE', '%' . $request->search . '%');
+            $query->where(
+                'title',
+                'LIKE',
+                '%' . $request->search . '%'
+            );
         }
-    
+
         // Filter by category
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
-    
+
         // Filter by level
         if ($request->filled('level')) {
             $query->where('level', $request->level);
         }
-    
+
         // Filter by minimum price
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
-    
+
         // Filter by maximum price
         if ($request->filled('max_price')) {
             $query->where('price', '<=', $request->max_price);
         }
-    
+
         // Sorting
         if ($request->filled('sort')) {
             if ($request->sort === 'price_low') {
@@ -77,13 +83,15 @@ class CourseController extends Controller
             } else {
                 $query->latest();
             }
+        } else {
+            $query->latest();
         }
-    
+
         $courses = $query
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
             ->paginate(6);
-    
+
         return response()->json([
             'status' => true,
             'message' => 'Courses filtered successfully',
@@ -91,18 +99,19 @@ class CourseController extends Controller
         ], 200);
     }
 
+    // Get active course categories
     public function categories()
     {
-    $categories = Course::where('is_active', true)
-        ->select('category')
-        ->distinct()
-        ->orderBy('category')
-        ->pluck('category');
+        $categories = Course::where('is_active', true)
+            ->select('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
 
-    return response()->json([
-        'status' => true,
-        'message' => 'Categories retrieved successfully',
-        'data' => $categories,
-    ], 200);
+        return response()->json([
+            'status' => true,
+            'message' => 'Categories retrieved successfully',
+            'data' => $categories,
+        ], 200);
     }
 }
